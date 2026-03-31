@@ -1,5 +1,5 @@
 {
-    "name": "mg/laraimporter",
+    "name": "mehul-listandsell/laraimporter",
     "description": "Universal database import wizard for Laravel — CSV, Excel, JSON with column mapping, related tables, many-to-many, queue support, and MongoDB.",
     "keywords": ["laravel", "import", "csv", "excel", "database", "wizard", "migration"],
     "license": "MIT",

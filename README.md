@@ -20,37 +20,150 @@ Universal database import wizard for Laravel. Upload CSV, Excel, or JSON files a
 
 - PHP 8.2+
 - Laravel 11 or 12
-- Alpine.js (in your frontend)
-- Tailwind CSS (in your frontend)
+- Alpine.js & Tailwind CSS (see [Frontend Dependencies](#frontend-dependencies) if not installed)
 
 ## Installation
+
+### Via Packagist (recommended)
 
 ```bash
 composer require mg/laraimporter
 ```
 
-Publish config:
+### Via GitHub (without Packagist)
 
-```bash
-php artisan vendor:publish --tag=laraimporter-config
+Add the repository to your project's `composer.json`:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/YOUR_USERNAME/laraimporter"
+        }
+    ]
+}
 ```
 
-Run migration:
+Then install:
 
 ```bash
+composer require mg/laraimporter:dev-main
+```
+
+### Via Local Path (for development)
+
+If the package is on your local machine:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../laraimporter"
+        }
+    ]
+}
+```
+
+```bash
+composer require mg/laraimporter:*
+```
+
+### After Installation
+
+```bash
+# Publish configuration
+php artisan vendor:publish --tag=laraimporter-config
+
+# Run migration
 php artisan migrate
 ```
 
-### Optional
+### Optional Dependencies
 
-For Excel/ODS support:
 ```bash
+# For Excel/ODS file support (XLS, XLSX, ODS)
 composer require phpoffice/phpspreadsheet
+
+# For MongoDB support
+composer require mongodb/laravel-mongodb
 ```
 
-For MongoDB support:
+## Frontend Dependencies
+
+LaraImporter requires **Alpine.js** and **Tailwind CSS**. If your project doesn't have them:
+
+### Option 1: CDN (quickest, no build step)
+
+Add these to your layout's `<head>`:
+
+```html
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Alpine.js -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+```
+
+### Option 2: NPM (recommended for production)
+
 ```bash
-composer require mongodb/laravel-mongodb
+npm install alpinejs tailwindcss @tailwindcss/forms autoprefixer postcss
+```
+
+**resources/js/app.js:**
+```js
+import Alpine from 'alpinejs';
+window.Alpine = Alpine;
+Alpine.start();
+```
+
+**resources/css/app.css:**
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+**tailwind.config.js:**
+```js
+export default {
+    content: [
+        './resources/**/*.blade.php',
+        './vendor/mg/laraimporter/resources/views/**/*.blade.php',  // Include package views
+    ],
+    theme: { extend: {} },
+    plugins: [require('@tailwindcss/forms')],
+};
+```
+
+> **Important:** If using Tailwind with a build step, add the package views path to your `content` array so Tailwind picks up the classes used in the wizard.
+
+### Axios (for AJAX requests)
+
+The wizard uses Axios for API calls. If not already installed:
+
+```bash
+npm install axios
+```
+
+```js
+// resources/js/bootstrap.js
+import axios from 'axios';
+window.axios = axios;
+window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+// CSRF token (required for POST requests)
+let token = document.head.querySelector('meta[name="csrf-token"]');
+if (token) {
+    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
+}
+```
+
+Make sure your layout has the CSRF meta tag:
+```html
+<meta name="csrf-token" content="{{ csrf_token() }}">
 ```
 
 ## Configuration
@@ -129,60 +242,115 @@ Navigate to your configured route prefix (default: `/admin/import`).
 @can('create imports')
     <a href="{{ route('laraimporter.index') }}">New Import</a>
 @endcan
+@can('view imports')
+    <a href="{{ route('laraimporter.history') }}">Import History</a>
+@endcan
 ```
 
 ## How It Works
 
 ### Step 1: Database Connection (external mode only)
-Enter credentials for MySQL, PostgreSQL, or MongoDB.
+Enter credentials for MySQL, PostgreSQL, or MongoDB. Skipped when `connection` is set to `'default'` or a specific connection name.
 
 ### Step 2: Upload File
-Drag & drop or browse for CSV, JSON, or Excel files. Preview first 10 rows.
+Drag & drop or browse for CSV, JSON, or Excel files. Preview first 10 rows. Large files (above queue threshold) will suggest background processing.
 
 ### Step 3: Select Target Table
 Pick the primary table. System auto-detects:
 - **Linked tables** (via foreign keys)
-- **Pivot tables** (many-to-many, detected by FK or naming convention)
+- **Pivot tables** (many-to-many, detected by FK constraints or naming convention like `product_has_categories`)
 
 ### Step 4: Map Columns
-- Map file columns → database columns (auto-suggested)
+- Map file columns → database columns (auto-suggested by name matching)
+- Choose target from primary table, linked tables, or any table in the database
 - Set duplicate handling (skip/update/create)
 - Set default values for required unmapped columns
-- Map comma-separated columns to many-to-many relationships
+- Map comma-separated columns to many-to-many pivot relationships
 
 ### Step 5: Preview & Import
-- Dry-run preview of first 10 rows
+- Dry-run preview of first 10 rows showing how data will be inserted
 - Choose direct or background queue processing
-- Real-time progress for queued imports
+- Real-time progress bar for queued imports with live stats
 
 ## Customization
 
 ### Publish views
+
 ```bash
 php artisan vendor:publish --tag=laraimporter-views
 ```
 
-Views will be in `resources/views/vendor/laraimporter/`.
+Views will be copied to `resources/views/vendor/laraimporter/` where you can customize them.
 
 ### Publish translations
+
 ```bash
 php artisan vendor:publish --tag=laraimporter-lang
 ```
 
+### Add your own language
+
+Create `resources/lang/vendor/laraimporter/fr/messages.php` (or any locale) by copying from the English file and translating.
+
 ### Layout examples
 
-**Blade component layout:**
+**Blade component layout** (Laravel Breeze, Jetstream, etc.):
 ```php
-'layout' => 'admin-layout',
+'layout' => 'app-layout',        // <x-app-layout>
 'layout_type' => 'component',
-'title_slot' => 'title',
+'title_slot' => 'header',        // depends on your layout
 ```
 
-**Traditional @extends layout:**
+**Traditional @extends layout** (AdminLTE, custom layouts):
 ```php
-'layout' => 'layouts.admin',
+'layout' => 'layouts.admin',     // @extends('layouts.admin')
 'layout_type' => 'extends',
-'title_slot' => 'title',
+'title_slot' => 'title',         // @section('title')
+```
+
+## Background Queue Setup
+
+For large file imports, LaraImporter can process data in the background using Laravel's queue system.
+
+1. Configure a queue driver in `.env`:
+```
+QUEUE_CONNECTION=database
+```
+
+2. Create the queue tables (if using database driver):
+```bash
+php artisan queue:table
+php artisan migrate
+```
+
+3. Run the queue worker:
+```bash
+php artisan queue:work
+```
+
+The wizard will automatically suggest background processing for files above the `queue_threshold` (default: 1000 rows). Users can also manually choose queue processing for any import.
+
+## Troubleshooting
+
+### "Class not found" after installation
+```bash
+composer dump-autoload
+php artisan package:discover
+```
+
+### Views not updating after publish
+```bash
+php artisan view:clear
+```
+
+### Permission cache issues (Spatie)
+```bash
+php artisan permission:cache-reset
+```
+
+### Excel files not supported
+```bash
+composer require phpoffice/phpspreadsheet
 ```
 
 ## License
