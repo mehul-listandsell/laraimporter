@@ -24,14 +24,6 @@ Universal database import wizard for Laravel. Upload CSV, Excel, or JSON files a
 
 ## Installation
 
-### Via Packagist (recommended)
-
-```bash
-composer require mg/laraimporter
-```
-
-### Via GitHub (without Packagist)
-
 Add the repository to your project's `composer.json`:
 
 ```json
@@ -39,7 +31,7 @@ Add the repository to your project's `composer.json`:
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/YOUR_USERNAME/laraimporter"
+            "url": "https://github.com/mehul-listandsell/laraimporter"
         }
     ]
 }
@@ -48,26 +40,7 @@ Add the repository to your project's `composer.json`:
 Then install:
 
 ```bash
-composer require mg/laraimporter:dev-main
-```
-
-### Via Local Path (for development)
-
-If the package is on your local machine:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../laraimporter"
-        }
-    ]
-}
-```
-
-```bash
-composer require mg/laraimporter:*
+composer require mehul-listandsell/laraimporter:dev-master
 ```
 
 ### After Installation
@@ -131,7 +104,7 @@ Alpine.start();
 export default {
     content: [
         './resources/**/*.blade.php',
-        './vendor/mg/laraimporter/resources/views/**/*.blade.php',  // Include package views
+        './vendor/mehul-listandsell/laraimporter/resources/views/**/*.blade.php',  // Include package views
     ],
     theme: { extend: {} },
     plugins: [require('@tailwindcss/forms')],

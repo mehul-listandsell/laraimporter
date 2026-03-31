@@ -1,6 +1,7 @@
-@include('laraimporter::layout')
-
 @php
+    $layout = config('laraimporter.layout', 'admin-layout');
+    $layoutType = config('laraimporter.layout_type', 'component');
+    $titleSlot = config('laraimporter.title_slot', 'title');
     $isExt = $isExternal ?? false;
     $mongoAvail = $mongoAvailable ?? false;
 
@@ -39,6 +40,15 @@
         __('laraimporter::messages.step_import'),
     ];
 @endphp
+
+@if($layoutType === 'component')
+<x-dynamic-component :component="$layout">
+    <x-slot :name="$titleSlot">{{ __('laraimporter::messages.title') }}</x-slot>
+@else
+@extends($layout)
+@section($titleSlot, __('laraimporter::messages.title'))
+@section('content')
+@endif
 
 <div x-data="importWizard()" x-cloak class="max-w-6xl mx-auto py-6 px-4">
 
@@ -1198,3 +1208,9 @@ function importWizard() {
     };
 }
 </script>
+
+@if($layoutType === 'component')
+</x-dynamic-component>
+@else
+@endsection
+@endif
